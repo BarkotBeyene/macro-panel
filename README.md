@@ -11,7 +11,7 @@ reliable when the underlying forecasts fail?
 
 ## Setup
 
-Python 3.14 (see `docs/decision_log.md`).
+Python 3.14.
 
 ```bash
 python3 -m venv .venv
@@ -31,7 +31,7 @@ cp .env.example .env   # then add your FRED API key
 | `data/raw/` | ALFRED vintages, tracked in `manifest.csv` |
 | `data/processed/` | Forecast episodes and evidence tables |
 | `results/` | One subfolder per run; never overwrite earlier runs |
-| `docs/` | Decision log, data sources, experiment protocol |
+| `docs/` | Experiment protocol |
 
 ## Planned files
 

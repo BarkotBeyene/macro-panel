@@ -126,7 +126,9 @@ def test_load_gatekeeper_csv(tmp_path, vintages):
     vintages.to_csv(path, index=False)
     gk = load_gatekeeper(path)
     assert gk.available_series() == ["PAYEMS", "UNRATE"]
-    assert gk.latest("UNRATE", "2026-10-20")["value"] == 4.2
+    latest = gk.latest("UNRATE", "2026-10-20")
+    assert latest is not None
+    assert latest["value"] == 4.2
 
 
 def test_load_gatekeeper_parquet(tmp_path, vintages):
