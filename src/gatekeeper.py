@@ -21,11 +21,16 @@ Input table (the evidence-table contract, one row per vintage of a value):
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import pandas as pd
 
 REQUIRED_COLUMNS = ("series_id", "date", "realtime_start", "value")
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+DEFAULT_EVIDENCE_PATH = REPO_ROOT / "data" / "processed" / "evidence_tables" / "vintages.parquet"
 
 
 def _to_timestamp(cutoff) -> pd.Timestamp:
@@ -120,3 +125,47 @@ class Gatekeeper:
                 "max_realtime_start": result["realtime_start"].max() if n_rows else None,
             }
         )
+
+
+# ---- loaders ---------------------------------------------------------------
+def load_gatekeeper(path=None, series=None) -> Gatekeeper:
+    """Build a Gatekeeper from the saved evidence table.
+
+    ``path`` defaults to data/processed/evidence_tables/vintages.parquet
+    (``.csv`` also works). ``series`` optionally restricts which series the
+    panel may request; every listed series must be in the table.
+    """
+    path = Path(path) if path is not None else DEFAULT_EVIDENCE_PATH
+    if not path.exists():
+        raise FileNotFoundError(
+            f"evidence table not found: {path}. Run src/build_evidence.py first, "
+            "or use gatekeeper_from_fred() to fetch directly."
+        )
+    if path.suffix == ".parquet":
+        df = pd.read_parquet(path)
+    elif path.suffix == ".csv":
+        df = pd.read_csv(path)
+    else:
+        raise ValueError(f"unsupported file type: {path.suffix} (use .parquet or .csv)")
+    if series is not None:
+        series = list(series)
+        missing = sorted(set(series) - set(df["series_id"].astype(str)))
+        if missing:
+            raise KeyError(f"series not in evidence table: {missing}")
+        df = df[df["series_id"].astype(str).isin(series)]
+    return Gatekeeper(df)
+
+
+def gatekeeper_from_fred(series, api_key=None) -> Gatekeeper:
+    """Build a Gatekeeper by downloading ALFRED vintages directly.
+
+    For quick work before the evidence table exists. Experiments should use
+    load_gatekeeper() so every run reads the same saved snapshot.
+    """
+    from dotenv import load_dotenv
+    from fredapi import Fred
+
+    load_dotenv(REPO_ROOT / ".env")
+    fred = Fred(api_key=api_key or os.getenv("FRED_API_KEY"))
+    frames = [from_fred_all_releases(s, fred.get_series_all_releases(s)) for s in series]
+    return Gatekeeper(pd.concat(frames, ignore_index=True))

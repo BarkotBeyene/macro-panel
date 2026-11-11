@@ -9,7 +9,12 @@ import os
 import pandas as pd
 import pytest
 
-from src.gatekeeper import Gatekeeper, clean_vintages, from_fred_all_releases
+from src.gatekeeper import (
+    Gatekeeper,
+    clean_vintages,
+    from_fred_all_releases,
+    load_gatekeeper,
+)
 
 
 @pytest.fixture
@@ -113,3 +118,40 @@ def test_live_unrate_release_timing():
     assert sep is not None
     assert sep["date"] == pd.Timestamp("2026-09-01")
     assert sep["realtime_start"] == pd.Timestamp("2026-10-02")
+
+
+# ---- loader ----------------------------------------------------------------
+def test_load_gatekeeper_csv(tmp_path, vintages):
+    path = tmp_path / "vintages.csv"
+    vintages.to_csv(path, index=False)
+    gk = load_gatekeeper(path)
+    assert gk.available_series() == ["PAYEMS", "UNRATE"]
+    assert gk.latest("UNRATE", "2026-10-20")["value"] == 4.2
+
+
+def test_load_gatekeeper_parquet(tmp_path, vintages):
+    pytest.importorskip("pyarrow")
+    path = tmp_path / "vintages.parquet"
+    vintages.to_parquet(path, index=False)
+    assert load_gatekeeper(path).available_series() == ["PAYEMS", "UNRATE"]
+
+
+def test_load_gatekeeper_series_filter(tmp_path, vintages):
+    path = tmp_path / "vintages.csv"
+    vintages.to_csv(path, index=False)
+    gk = load_gatekeeper(path, series=["UNRATE"])
+    assert gk.available_series() == ["UNRATE"]
+    with pytest.raises(KeyError):
+        gk.as_of("PAYEMS", "2026-10-20")
+
+
+def test_load_gatekeeper_unknown_series_raises(tmp_path, vintages):
+    path = tmp_path / "vintages.csv"
+    vintages.to_csv(path, index=False)
+    with pytest.raises(KeyError):
+        load_gatekeeper(path, series=["UNRATE", "NOTASERIES"])
+
+
+def test_load_gatekeeper_missing_file_raises(tmp_path):
+    with pytest.raises(FileNotFoundError):
+        load_gatekeeper(tmp_path / "nope.parquet")
