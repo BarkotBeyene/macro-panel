@@ -1,0 +1,13 @@
+.venv
+.env
+.git
+.github
+.fetch-client
+.pytest_cache
+__pycache__
+.DS_Store
+docs/
+notebooks/
+internal/
+README.md
+.server-exclude
