@@ -44,13 +44,18 @@ import pandas as pd
 
 from src.gatekeeper import REPO_ROOT, clean_vintages, from_fred_all_releases
 
-PROMPT_VERSION = "recall-v1"
+PROMPT_VERSION = "recall-v2"
 SYSTEM_PROMPT = "You are a careful assistant. Answer with a single number only."
 USER_TEMPLATE = (
     "What was the U.S. unemployment rate (seasonally adjusted, as first reported "
     "by the Bureau of Labor Statistics) for {month}? "
     "Reply with only the percentage as a number with one decimal, for example 4.2. "
     "If you do not know, give your best guess."
+)
+# Sent once if the first reply contains no number (e.g. "I don't have that information").
+FORCE_TEMPLATE = (
+    "I understand you may not know for sure. Please give your single best numeric "
+    "guess for the U.S. unemployment rate in {month}, as a number with one decimal only."
 )
 
 MODEL_CUTOFF = "2023-12-31"  # Llama 3.1 model card: pretraining data cutoff December 2023
@@ -90,8 +95,9 @@ def probe_months(truth: pd.DataFrame, start=PROBE_START, end=PROBE_END, cutoff=M
 class OpenAICompatible:
     """Minimal chat client for vLLM / Ollama / any /v1/chat/completions server."""
 
-    def __init__(self, model: str, base_url: str, api_key: str | None = None):
+    def __init__(self, model: str, base_url: str, api_key: str | None = None, timeout: int = 600):
         self.model, self.base_url, self.api_key = model, base_url.rstrip("/"), api_key or "none"
+        self.timeout = timeout
 
     def __call__(self, system: str, user: str, temperature: float, max_tokens: int) -> tuple[str, int]:
         import urllib.request
@@ -109,8 +115,15 @@ class OpenAICompatible:
             data=body,
             headers={"Content-Type": "application/json", "Authorization": f"Bearer {self.api_key}"},
         )
-        with urllib.request.urlopen(req, timeout=120) as resp:
-            out = json.loads(resp.read())
+        # The first call can be slow while the model loads into memory; retry once on timeout.
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                    out = json.loads(resp.read())
+                break
+            except TimeoutError:
+                if attempt == 1:
+                    raise
         text = out["choices"][0]["message"]["content"]
         tokens = int(out.get("usage", {}).get("total_tokens", 0))
         return text, tokens
@@ -167,6 +180,7 @@ def summarize(probe: pd.DataFrame) -> pd.DataFrame:
                 "period": period,
                 "n_queries": len(grp),
                 "n_answered": len(ans),
+                "decline_rate": round(grp["declined"].mean(), 3) if "declined" in grp else None,
                 "model_mae": round(err.mean(), 3) if len(ans) else None,
                 "exact_match_rate": round((err < 0.05).mean(), 3) if len(ans) else None,
                 "within_0.2_rate": round((err <= 0.2 + 1e-9).mean(), 3) if len(ans) else None,
@@ -180,12 +194,25 @@ def summarize(probe: pd.DataFrame) -> pd.DataFrame:
 
 # ---- run -------------------------------------------------------------------
 def run_probe(client, months: pd.DataFrame, samples: int, temperature: float, max_tokens: int) -> pd.DataFrame:
+    """Ask each month; if the model declines, ask once more for a best guess.
+
+    ``declined`` records whether the first reply had no number. ``answer`` is the
+    number from the first reply, or from the follow-up if the first declined.
+    """
     rows = []
     for rec in months.itertuples(index=False):
         label = rec.date.strftime("%B %Y")
         for s in range(samples):
             t0 = time.perf_counter()
             text, tokens = client(SYSTEM_PROMPT, USER_TEMPLATE.format(month=label), temperature, max_tokens)
+            first = parse_rate(text)
+            forced_text, answer = "", first
+            if first is None:
+                forced_text, more = client(SYSTEM_PROMPT, FORCE_TEMPLATE.format(month=label), temperature, max_tokens)
+                tokens += more
+                answer = parse_rate(forced_text)
+            print(f"  {rec.date:%Y-%m} ({rec.period}): truth {rec.value}, model {answer}"
+                  f"{' after decline' if first is None else ''}", flush=True)
             rows.append(
                 {
                     "month": rec.date.strftime("%Y-%m"),
@@ -195,7 +222,9 @@ def run_probe(client, months: pd.DataFrame, samples: int, temperature: float, ma
                     "first_release": rec.first_release.date(),
                     "naive_guess": rec.naive_guess,
                     "raw_reply": text.strip(),
-                    "answer": parse_rate(text),
+                    "declined": first is None,
+                    "forced_reply": forced_text.strip(),
+                    "answer": answer,
                     "tokens": tokens,
                     "seconds": round(time.perf_counter() - t0, 2),
                 }
@@ -213,6 +242,7 @@ def main(argv=None) -> None:
     p.add_argument("--temperature", type=float, default=0.0)
     p.add_argument("--max-tokens", type=int, default=16)
     p.add_argument("--evidence", help="saved evidence table with UNRATE vintages; default downloads from ALFRED")
+    p.add_argument("--timeout", type=int, default=600, help="seconds to wait per model reply (openai backend)")
     p.add_argument("--limit", type=int, help="only probe this many months per period (quick smoke test)")
     args = p.parse_args(argv)
 
@@ -225,7 +255,7 @@ def main(argv=None) -> None:
         months = months.groupby("period", group_keys=False).head(args.limit)
 
     client = (
-        OpenAICompatible(args.model, args.base_url, os.getenv("LLM_API_KEY"))
+        OpenAICompatible(args.model, args.base_url, os.getenv("LLM_API_KEY"), args.timeout)
         if args.backend == "openai"
         else HFLocal(args.model, args.load_4bit)
     )
@@ -248,6 +278,7 @@ def main(argv=None) -> None:
                 "prompt_version": PROMPT_VERSION,
                 "system_prompt": SYSTEM_PROMPT,
                 "user_template": USER_TEMPLATE,
+                "force_template": FORCE_TEMPLATE,
                 "temperature": args.temperature,
                 "samples": args.samples,
                 "max_tokens": args.max_tokens,

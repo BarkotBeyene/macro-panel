@@ -61,14 +61,16 @@ class Schedule:
     day_min: int  # allowed day-of-month window for the release
     day_max: int
     months_after: int | None  # release month minus reference month (None = weekly)
+    lag_days: tuple[int, int] | None = None  # if set: days from end of reference month, replaces the month/day checks
 
 
 SCHEDULES = {
     # First Friday of the following month, occasionally the second Friday.
     "UNRATE": Schedule("BLS", "Employment Situation", "8:30 a.m.", (4,), 1, 12, 1),
     "PAYEMS": Schedule("BLS", "Employment Situation", "8:30 a.m.", (4,), 1, 12, 1),
-    # Usually the first or second Tuesday about five weeks after the month ends.
-    "JTSJOL": Schedule("BLS", "JOLTS", "10:00 a.m.", (1,), 1, 14, 2),
+    # About four to six weeks after the month ends, usually a Tuesday (sometimes
+    # Wed to Fri around holidays), which can fall late in the following month.
+    "JTSJOL": Schedule("BLS", "JOLTS", "10:00 a.m.", (1, 2, 3, 4), 1, 31, 2, lag_days=(25, 45)),
     # Mid-month for the previous month.
     "INDPRO": Schedule("Federal Reserve Board", "G.17 Industrial Production", "9:15 a.m.", (0, 1, 2, 3, 4), 13, 19, 1),
     # Every Thursday (Wednesday in holiday weeks) for the week ending the prior Saturday.
@@ -104,7 +106,7 @@ def first_releases(vintages: pd.DataFrame, start=CHECK_START) -> pd.DataFrame:
         .agg(first_release=("realtime_start", "min"), first_value=("value", "first"))
     )
     first = first[first["date"] >= pd.Timestamp(start)].copy()
-    first["release_weekday"] = first["first_release"].dt.dayofweek.map(lambda d: WEEKDAYS[d])
+    first["release_weekday"] = first["first_release"].dt.day_of_week.map(lambda d: WEEKDAYS[d])
     first["release_day"] = first["first_release"].dt.day
     first["lag_days"] = (first["first_release"] - first["date"]).dt.days
     return first.reset_index(drop=True)
@@ -124,9 +126,14 @@ def check_schedule(first: pd.DataFrame) -> pd.DataFrame:
             continue
         rel, obs = rec.first_release, rec.date
         issues = []
-        if rel.dayofweek not in sched.weekdays:
-            issues.append(f"weekday {WEEKDAYS[rel.dayofweek]}")
-        if sched.months_after is not None:
+        if rel.day_of_week not in sched.weekdays:
+            issues.append(f"weekday {WEEKDAYS[rel.day_of_week]}")
+        if sched.lag_days is not None:
+            lag = (rel - (obs + pd.offsets.MonthEnd(0))).days
+            lo, hi = sched.lag_days
+            if not lo <= lag <= hi:
+                issues.append(f"{lag} days after the reference month ended, expected {lo}-{hi}")
+        elif sched.months_after is not None:
             gap = _months_between(rel, obs)
             if gap != sched.months_after:
                 issues.append(f"released {gap} month(s) after reference month, expected {sched.months_after}")
@@ -141,7 +148,7 @@ def check_schedule(first: pd.DataFrame) -> pd.DataFrame:
                 "series_id": rec.series_id,
                 "date": obs.date(),
                 "first_release": rel.date(),
-                "weekday": WEEKDAYS[rel.dayofweek],
+                "weekday": WEEKDAYS[rel.day_of_week],
                 "matches_schedule": not issues,
                 "issue": "; ".join(issues),
             }

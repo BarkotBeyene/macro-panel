@@ -1,0 +1,19 @@
+{
+  "run_id": "20261123-164131-llama3.1-8b",
+  "model": "llama3.1:8b",
+  "backend": "openai",
+  "load_4bit": false,
+  "model_cutoff": "2023-12-31",
+  "prompt_version": "recall-v1",
+  "system_prompt": "You are a careful assistant. Answer with a single number only.",
+  "user_template": "What was the U.S. unemployment rate (seasonally adjusted, as first reported by the Bureau of Labor Statistics) for {month}? Reply with only the percentage as a number with one decimal, for example 4.2. If you do not know, give your best guess.",
+  "temperature": 0.0,
+  "samples": 1,
+  "max_tokens": 16,
+  "probe_window": [
+    "2022-01-01",
+    "2026-09-01"
+  ],
+  "truth": "ALFRED UNRATE first release",
+  "total_tokens": 573
+}

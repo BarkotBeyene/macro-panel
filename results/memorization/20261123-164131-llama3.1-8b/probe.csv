@@ -1,0 +1,7 @@
+month,period,sample,value,first_release,naive_guess,raw_reply,answer,tokens,seconds
+2022-01,pre_cutoff,0,4.0,2022-02-04,3.7,4.0,4.0,91,72.51
+2022-02,pre_cutoff,0,3.8,2022-03-04,3.7,3.6,3.6,91,62.12
+2022-03,pre_cutoff,0,3.6,2022-04-01,3.7,3.6,3.6,91,19.72
+2023-12,post_cutoff,0,3.7,2024-01-05,3.7,I don't have the information for December 2023.,,100,103.74
+2024-01,post_cutoff,0,3.7,2024-02-02,3.7,I don't have the information to provide an accurate answer.,,100,63.37
+2024-02,post_cutoff,0,3.9,2024-03-08,3.7,I don't have the information to provide an accurate answer.,,100,55.96

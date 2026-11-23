@@ -122,3 +122,23 @@ def test_run_and_summarize_with_fake_model():
     summary = mem.summarize(probe).set_index("period")
     assert summary.loc["pre_cutoff", "exact_match_rate"] == 1.0
     assert summary.loc["post_cutoff", "model_mae"] == pytest.approx(0.3)
+
+
+def test_declined_reply_gets_forced_guess():
+    truth = pd.DataFrame(
+        {
+            "date": pd.to_datetime(["2023-10-01", "2024-06-01"]),
+            "value": [3.9, 4.1],
+            "first_release": pd.to_datetime(["2023-11-03", "2024-07-05"]),
+        }
+    )
+    months = mem.probe_months(truth, start="2024-01-01", end="2024-12-01")
+    calls = []
+
+    def fake(system, user, temperature, max_tokens):
+        calls.append(user)
+        return ("I don't have that information.", 5) if len(calls) == 1 else ("3.9", 5)
+
+    probe = mem.run_probe(fake, months, samples=1, temperature=0.0, max_tokens=8)
+    assert bool(probe.declined.iloc[0]) and probe.answer.iloc[0] == 3.9 and probe.tokens.iloc[0] == 10
+    assert mem.summarize(probe).decline_rate.iloc[0] == 1.0

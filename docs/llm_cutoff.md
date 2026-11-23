@@ -29,7 +29,11 @@ We ask the model, with no evidence, for the first-reported unemployment rate
 of each month from January 2022 to September 2026, and score its answer
 against the ALFRED first release.
 
-- Prompt version: `recall-v1` (stored with each run in `run.json`)
+- Prompt version: `recall-v2` (stored with each run in `run.json`)
+- If the model declines (no number in its reply), we ask once more for its
+  single best guess. The decline itself is recorded, and the decline rate is
+  reported per period, since refusing after the cutoff is evidence the model
+  knows where its knowledge stops.
 - Decoding: temperature 0, one answer per month by default
 - Naive comparator: the last value published before the cutoff (3.7% for
   November 2023). A model with no post-cutoff knowledge should do about as
@@ -67,10 +71,34 @@ Results go to `results/memorization/<run_id>/` (`probe.csv`, `summary.csv`,
 
 ## Results
 
-_Fill in from `summary.csv` after the run: MAE, exact-match rate and naive
-MAE for pre-cutoff and post-cutoff months, plus one or two example replies._
+Run `20261123-171345-llama3.1-8b` (Llama 3.1 8B via Ollama, prompt `recall-v2`,
+temperature 0, one answer per month, January 2022 to September 2026, October
+2025 excluded because it was never published).
 
-| Period | Months | Model MAE | Exact match | Naive MAE |
-| --- | --- | --- | --- | --- |
-| Pre-cutoff | | | | |
-| Post-cutoff | | | | |
+| Period | Months | Decline rate | Model MAE | Exact match | Within 0.2 pts | Naive MAE | Naive exact match |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Pre-cutoff (Jan 2022 to Nov 2023) | 23 | 0% | 0.10 | 61% | 83% | 0.13 | 22% |
+| Post-cutoff (Dec 2023 to Sep 2026) | 33 | 100% | 0.44 | 15% | 45% | 0.45 | 6% |
+
+The naive guess is 3.7%, the November 2023 value, which was the last one
+published before the cutoff.
+
+### Takeaways
+
+1. **The model remembers pre-cutoff unemployment.** With no evidence at all it
+   named the exact first-release rate for 14 of 23 months in 2022 and 2023,
+   almost three times as often as the naive guess (61% vs 22%). Its misses
+   cluster in late 2023 (September to November), the months closest to the
+   cutoff and least covered in training data.
+2. **It does not know post-cutoff values.** It declined every month from
+   December 2023 on ("I don't have the information"). When pushed for a
+   guess, it repeated generic values (4.5% for most of early 2024) and its
+   error was the same as the naive guess (0.44 vs 0.45). There is no sign it
+   saw 2024 to 2026 unemployment data.
+3. **Implication.** Our January 2024 to September 2026 evaluation window is
+   clean for this model, so the panel has to rely on the evidence it requests
+   rather than recall. Pre-cutoff months, where the model could answer from
+   memory, are the right comparison period for the H2 faithfulness test.
+4. **Caveat.** This is one prompt at temperature 0. A model can still hold
+   partial knowledge that a direct question does not surface, so H2 compares
+   periods rather than claiming any period is contamination free.
