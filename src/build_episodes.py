@@ -7,6 +7,12 @@ One episode per target month M:
 - target: UNRATE for month M, a nowcast; BLS first publishes it in early M+1
 - truth: the first official release of UNRATE for month M, and its date
 
+Columns used by the scoring code (src/evaluation, docs/run_log_format.md):
+``episode`` (forecast date), ``target_month`` ("YYYY-MM"),
+``target_first_release`` (truth) and ``last_known`` (latest UNRATE visible on
+the forecast date). ``truth_first_release`` and ``last_visible_value`` repeat
+them under the original names.
+
 Months that were never published (October 2025, government shutdown) have no
 truth and are listed as excluded instead of silently dropped.
 
@@ -61,6 +67,10 @@ def build_episodes(gk: Gatekeeper, vintages: pd.DataFrame, start=DEFAULT_START, 
         seen = gk.latest(series_id, cutoff)
         episodes.append({
             "episode_id": f"{series_id}-{m:%Y-%m}",
+            "episode": cutoff.date(),  # forecast date, as in the run log
+            "target_month": f"{m:%Y-%m}",
+            "target_first_release": float(t["truth_first_release"]),
+            "last_known": seen["value"] if seen else None,
             "cutoff": cutoff.date(),
             "target_series": series_id,
             "target_date": m.date(),

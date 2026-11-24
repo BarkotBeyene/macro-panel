@@ -111,3 +111,12 @@ def test_gatekeeper_view_at_cutoff(episodes):
     # On Sep 20, 2025 the latest visible month is August.
     assert str(e.loc["UNRATE-2025-09", "last_visible_date"]) == "2025-08-01"
     assert e.loc["UNRATE-2025-09", "gap_months"] == 1
+
+
+def test_scoring_columns_match_run_log_format(episodes):
+    eps, _ = episodes
+    e = eps.set_index("target_month")
+    assert {"episode", "target_month", "target_first_release", "last_known"} <= set(eps.columns)
+    assert e.loc["2025-11", "target_first_release"] == 4.6
+    assert e.loc["2025-11", "last_known"] == 4.4  # September, released that morning
+    assert str(e.loc["2025-11", "episode"]) == "2025-11-20"
