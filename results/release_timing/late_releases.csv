@@ -1,0 +1,9 @@
+forecast_date,series_id,reference_month,first_release,note
+2025-10-20,UNRATE,2025-09,2025-11-20,released 31 days after the forecast date
+2025-10-20,PAYEMS,2025-09,2025-11-20,released 31 days after the forecast date
+2025-10-20,INDPRO,2025-09,2025-12-03,released 44 days after the forecast date
+2025-11-20,UNRATE,2025-10,,never published (no value in ALFRED)
+2025-11-20,PAYEMS,2025-10,2025-12-16,released 26 days after the forecast date
+2025-11-20,JTSJOL,2025-09,2025-12-09,released 19 days after the forecast date
+2025-11-20,INDPRO,2025-10,2025-12-23,released 33 days after the forecast date
+2025-12-20,INDPRO,2025-11,2025-12-23,released 3 days after the forecast date
