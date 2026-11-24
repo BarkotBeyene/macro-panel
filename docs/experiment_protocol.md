@@ -4,13 +4,36 @@ Sections marked TBD are team decisions that have not been made yet.
 
 ## Target and forecast episodes
 
-- Target series: U.S. unemployment rate (ALFRED vintages).
-- Forecast dates: TBD
-- Horizons: TBD
+- Target series: U.S. unemployment rate, `UNRATE` (ALFRED vintages).
+- Forecast dates: the 20th of each month, 5 p.m. ET. A release dated on the
+  cutoff day counts as visible (releases come out in the morning).
+- Horizon: nowcast of the current month (target = the month of the cutoff),
+  which BLS first publishes in early the next month.
+- Truth: the first official release of the target month (ALFRED), not later
+  revisions.
+- Window: January 2024 onward (after Llama 3.1's December 2023 training
+  cutoff) through the latest month with a first release. Months never
+  published (October 2025, government shutdown) are excluded and listed in
+  `data/processed/forecast_episodes/excluded.csv`.
+- Built by `python -m src.build_episodes` into
+  `data/processed/forecast_episodes/episodes.csv`.
 
 ## Evidence list
 
-Indicators the panel may request through the Gatekeeper: TBD
+Indicators the panel may request through the Gatekeeper (all releases and
+revisions, built by `python -m src.build_evidence`; descriptions in
+`src/build_evidence.py`, `SERIES`):
+
+| Series | Indicator | Frequency |
+| --- | --- | --- |
+| UNRATE | Unemployment rate (target; its own history is visible) | monthly |
+| PAYEMS | Nonfarm payroll employment | monthly |
+| ICSA | Initial unemployment claims | weekly |
+| CCSA | Continued unemployment claims | weekly |
+| JTSJOL | Job openings (JOLTS) | monthly |
+| INDPRO | Industrial production | monthly |
+| CPIAUCSL | Consumer prices (CPI) | monthly |
+| FEDFUNDS | Effective federal funds rate | monthly |
 
 ## Models
 
