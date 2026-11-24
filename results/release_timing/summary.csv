@@ -1,0 +1,6 @@
+Series,Official release,Releases checked,Match schedule,Flagged,Median release day,Releases after the 20th,Forecast dates missing expected month
+UNRATE,"BLS Employment Situation, 8:30 a.m. ET",43,38,5,5,0,2
+PAYEMS,"BLS Employment Situation, 8:30 a.m. ET",44,38,6,5,0,2
+JTSJOL,"BLS JOLTS, 10:00 a.m. ET",43,42,1,5,10,1
+INDPRO,"Federal Reserve Board G.17 Industrial Production, 9:15 a.m. ET",44,41,3,16,2,3
+ICSA,"DOL Unemployment Insurance Weekly Claims, 8:30 a.m. ET",193,186,7,weekly,n/a,0

@@ -1,0 +1,3 @@
+period,n_queries,n_answered,model_mae,exact_match_rate,within_0.2_rate,naive_mae
+pre_cutoff,3,3,0.067,0.667,1.0,0.167
+post_cutoff,3,0,,,,0.067
