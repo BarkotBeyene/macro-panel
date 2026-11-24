@@ -1,0 +1,21 @@
+{
+  "run_id": "20261124-185909-baselines",
+  "systems": {
+    "no_change": "no-change",
+    "ar1": "AR(1) on monthly changes, OLS"
+  },
+  "episodes": 33,
+  "evidence_table_sha256": "e92f575ebfc6b9662ec5d7ef87e13ddc1fa492349cbb151089b69b8fb79fad6e",
+  "episodes_sha256": "c3e636495229d3ec16f3ff94a0de4e6d73b19292d8eaf90248ffbe4e1d2b89c2",
+  "quantiles": [
+    0.1,
+    0.5,
+    0.9
+  ],
+  "pandemic_excluded": [
+    "2020-03-01",
+    "2021-06-01"
+  ],
+  "python": "3.13.5",
+  "created_utc": "2026-11-24T18:59:09+00:00"
+}
