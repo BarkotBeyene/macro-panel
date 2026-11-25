@@ -1,0 +1,13 @@
+{
+  "runs": [
+    "results/forecasts/20261124-211538-agents"
+  ],
+  "decide": "src.agents.chair:redecide",
+  "replacement": null,
+  "systems": [
+    "single_agent"
+  ],
+  "repeats": 3,
+  "min_effect": 0.05,
+  "out": "results/faithfulness/20261124-211538-agents-single_agent"
+}

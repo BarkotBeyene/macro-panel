@@ -50,6 +50,24 @@ multivariate run is an extension only.
 Every baseline returns: forecast value, 80% prediction interval (10th and 90th
 percentiles), forecast origin, model version, evidence consumed.
 
+## Agent systems (Milestone II pilot)
+
+Code: `src/agents/` (run with `bash scripts/run_milestone2.sh`).
+
+| Setting | Value |
+| --- | --- |
+| LLM | Llama 3.1 8B Instruct (`llama3.1:8b` via Ollama, same model as the memorization probe) |
+| Temperature | 0.3 for every role; seed 0 for the run, no seed when the faithfulness test reruns the Chair |
+| Max new tokens | Analyst 300, Economist 350, Skeptic 300, Chair step 150, Chair decision 400 |
+| Evidence budget | 4 credits per forecast; every menu item costs 1; UNRATE history is free |
+| Menu | PAYEMS, ICSA, CCSA, JTSJOL, INDPRO, CPIAUCSL, FEDFUNDS, Chronos-2 nowcast, TimesFM-3 nowcast |
+| Rounds | at most 3 (Analyst, Economist, Skeptic, then the Chair buys evidence or commits) |
+| Final decision | separate Chair call: forecast, 80% interval, cited items with direction and rank, explanation |
+| Single agent | same model, menu, budget and final-decision prompt, no discussion |
+| Majority vote | 3 independent single agents (seeds 0, 1, 2); median forecast and interval; items cited by at least 2 |
+| Pilot episodes | 12 of the 33, evenly spaced (first and last included) |
+| Faithfulness | remove each evidence item, and all labor-market series together; 3 repeats; moved if the shift exceeds max(0.05 pp, 2 x repeat SD) |
+
 ## Stages
 
 1. Controlled foundation-model comparison (above).
