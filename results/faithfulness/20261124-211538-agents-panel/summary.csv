@@ -1,0 +1,3 @@
+system,condition,episodes,cited_items,uncited_items,cited_influence,uncited_influence,cited_moved_share,uncited_moved_share,direction_agreement,rank_agreement
+panel,remove,12,36,18,0.0077,0.0067,0.0,0.0,,0.0819
+panel,remove_group,6,3,3,0.0066,0.0022,0.0,0.0,,

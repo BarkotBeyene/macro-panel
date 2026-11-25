@@ -1,0 +1,12 @@
+{
+  "agent_run": "results/forecasts/20261124-211538-agents",
+  "faithfulness": [
+    "results/faithfulness/20261124-211538-agents-panel",
+    "results/faithfulness/20261124-211538-agents-single_agent"
+  ],
+  "baselines": [
+    "/home/std-ai/fall2026-genai-team5/results/forecasts/20261124-185909-baselines",
+    "/home/std-ai/fall2026-genai-team5/results/forecasts/20261124-191252-baselines"
+  ],
+  "out": null
+}

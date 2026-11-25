@@ -1,0 +1,7 @@
+system,vs,n_shared,mae_diff,ci90_low,ci90_high,share_better
+ar1,no_change,12,0.0002,-0.0065,0.0073,0.5
+chronos2,no_change,12,0.0106,-0.0131,0.0322,0.3333
+timesfm3,no_change,12,0.0127,0.0006,0.024,0.25
+single_agent,no_change,12,0.0092,-0.01,0.0283,0.25
+majority_vote,no_change,12,0.0142,-0.005,0.0333,0.25
+panel,no_change,12,0.0075,-0.0125,0.0275,0.3333
